@@ -44,7 +44,7 @@ echo "Restoring backup..."
 sleep 20
 ./wait_for_device.sh
 echo
-./bin/afcclient put ./data/dyldmagic/magic.dylib Media/PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
+./bin/afcclient put ./data/dyldmagic/magic.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
 echo "Mounting DDI..."
 ./bin/ideviceimagemounter ./data/DeveloperDiskImage.dmg  >/dev/null || echo "Couldn't mount DDI. Not an issue if Xcode's running, an issue if it isn't."
 
