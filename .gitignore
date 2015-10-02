@@ -1,3 +1,5 @@
+vmmd
+kdump6
 dyld.thin
 tmp/**
 main
