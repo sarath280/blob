@@ -6,7 +6,7 @@ function abort() {
 echo "Error. Exiting..." >&2
 exit 254;
 }
-
+echo "DISABLE FIND MY PHONE"
 ./wait_for_device.sh
 rm -rf tmp
 mkdir tmp
