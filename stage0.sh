@@ -25,7 +25,7 @@ echo "Backing up, could take several minutes..." >&2
 udid="$(ls tmp | head -1)"
 
 mkdir tmp_ddi
-ddi="$(find /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/DeviceSupport/|grep 8.4|grep .dmg'$'|head -1)"
+ddi="$(find /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/DeviceSupport/ 2>/dev/null | grep 8.4|grep .dmg'$'||echo './data/DeveloperDiskImage.dmg' |head -1 )"
 hdiutil attach -nobrowse -mountpoint tmp_ddi "$ddi"
 cp tmp_ddi/Applications/MobileReplayer.app/MobileReplayer tmp/MobileReplayer
 cp tmp_ddi/Applications/MobileReplayer.app/Info.plist tmp/MobileReplayerInfo.plist
