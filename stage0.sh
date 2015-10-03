@@ -43,6 +43,7 @@ echo "Restoring backup..."
 )>/dev/null
 sleep 20
 ./wait_for_device.sh
+read -p "Press [Enter] key when your device finishes restoring..."
 echo
 ./mount_ddi.sh
 ./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep armv7 || abort ) | tr ':' '\n'|tr -d ' '|head -1)" tmp/cache
