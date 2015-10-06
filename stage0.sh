@@ -57,4 +57,6 @@ cd data/dyldmagic
 ./make.sh
 cd ../..
 ./bin/afcclient put ./data/dyldmagic/magic.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
+./bin/afcclient put ./data/untether/untether drugs
+
 echo "Tap on the jailreak icon to crash the kernel (or dump it if you're in luck!)"
