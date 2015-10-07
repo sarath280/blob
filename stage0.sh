@@ -58,5 +58,7 @@ cd data/dyldmagic
 cd ../..
 ./bin/afcclient put ./data/dyldmagic/magic.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
 ./bin/afcclient put ./data/untether/untether drugs
-
-echo "Tap on the jailreak icon to crash the kernel (or dump it if you're in luck!)"
+zcat ./data/bootstrap.tgz > ./tmp/bootstrap.tar
+./bin/afcclient put ./tmp/bootstrap.tar PhotoData/KimJongCracks/bootstrap.tar
+./bin/afcclient put ./data/tar PhotoData/KimJongCracks/tar
+echo "Tap on the jailreak icon to crash the kernel (or 0wn it if you're in luck!)"
