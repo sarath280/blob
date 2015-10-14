@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# Initial vars
+### Initial vars ###
+
 SCRIPTPATH=`dirname $0`
 ddi="$(find /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/DeviceSupport/ 2>/dev/null | grep "8.4\|.dmg'$'" || echo './data/DeveloperDiskImage.dmg' | head -1)" 
 
@@ -13,23 +14,27 @@ echo "Error. Exiting..." >&2
 exit 254;
 }
 
-# Ddi mount function
+
+### Ddi mount function ###
+
 function mount_ddi(){
 echo "Mounting DDI..."
 ./bin/ideviceimagemounter "$ddi" >/dev/null || echo "Couldn't mount DDI. Not an issue if Xcode's running, an issue if it isn't."
 }
 
-# Device detection function
+### Device detection function ###
 
 function wait_for_device() {
 echo "Waiting for device..."
 while ! (./bin/afcclient deviceinfo | grep -q FSTotalBytes); do sleep 5; done 2>/dev/null
 }
 
+### Jailbreak Functions ###
+
 # Stage 1:
 # set-up environment, install app and swap binaries 
 
-stage1(){
+function stage1(){
 echo "Setting up environment..."
 
 ./bin/afcclient put ./data/WWDC_Info_TOC.plist /yalu.plist | grep Uploaded || abort
@@ -70,7 +75,7 @@ echo "Creating dirs on device">&2
 ./bin/afcclient mkdir PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework
 
 # Stage 1
-stage1 || exit
+stage1 || abort
 
 # Backup device data
 
@@ -136,5 +141,7 @@ echo "Tap on the jailbreak icon to crash the kernel (or 0wn it if you're in luck
 }
 
 # Let's do this!
-stage0
+stage0 || abort
+
+exit 0
 
