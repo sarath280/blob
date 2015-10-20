@@ -945,7 +945,7 @@ FuncCall4([dy solveSymbol:@"_syscall"], sysnumber, 0, 0, 0);\
     
     
     LoadR0(SEG_VAR(shared_cache_base));
-    AddR0(0x181d8230); // pointer to libdyld BSS
+    AddR0(_LDYLD_BSS - _DYCACHE_BASE); // pointer to libdyld BSS
     WriteR0(SEG_VAR(zero_this));
 
     for (int i=0; i < 0xF0; i+=8)
