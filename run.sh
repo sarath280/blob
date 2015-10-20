@@ -117,19 +117,27 @@ echo
 mount_ddi
 
 echo "Fetching symbols..."
-./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep armv7 || abort ) | tr ':' '\n'|tr -d ' '|head -1)" tmp/cache
 ./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep dyld$ || abort ) | tr ':' '\n'|tr -d ' '|head -1)" tmp/dyld.fat
+lipo -info dyld.fat | grep arm64 >/dev/null && ./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep arm64 || abort ) | tr ':' '\n'|tr -d ' '|head -1)" tmp/cache64
+./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep armv7 || abort ) | tr ':' '\n'|tr -d ' '|head -1)" tmp/cache
 
 echo "Compiling jailbreak files..."
 cd tmp
+lipo -info dyld.fat | grep arm64 >/dev/null &&  lipo dyld.fat -thin arm64 -output dyld64
 lipo -info dyld.fat | grep Non-fat >/dev/null || (lipo dyld.fat -thin "$(lipo -info dyld.fat | tr ' ' '\n' | grep v7)" -output dyld; mv dyld dyld.fat) && mv dyld.fat dyld
 $SCRIPTPATH./bin/jtool -e IOKit cache
 $SCRIPTPATH./bin/jtool -e libsystem_kernel.dylib cache
+lipo -info dyld.fat | grep arm64 >/dev/null && (
+$SCRIPTPATH./bin/jtool -e libdyld.dylib cache64
+cd $SCRIPTPATH./data/dyldmagic_amfid
+./make.sh
+cd ../..
+)
 cd $SCRIPTPATH./data/dyldmagic
 ./make.sh
 
 echo "Copying files to device..."
-cd $SCRIPTPATH./../
+cd ../../
 ./bin/afcclient put ./data/dyldmagic/magic.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
 ./bin/afcclient put ./data/untether/untether drugs
 zcat ./data/bootstrap.tgz > ./tmp/bootstrap.tar
