@@ -16,10 +16,11 @@ function fetchsymbols_armv7()
 
 function make_run()
 {
-  cd ./data/dyldmagic_amfid
-  ./make.sh
-  cd ../../
-  ./bin/afcclient put ./data/dyldmagic_amfid/magic64_amfid.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
+  #cd ./data/dyldmagic_amfid
+  #./make.sh
+  #cd ../../
+  #./bin/afcclient put ./data/dyldmagic_amfid/magic64_amfid.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
+  # just test...
   cd ./data/dyldmagic
   ./make-run.sh
   cd ../../
