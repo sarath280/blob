@@ -5,3 +5,7 @@ tmp/**
 main
 .DS_Store
 magic.dylib
+
+data/bootstrap.tgz
+
+data/bootstrap.tgz.Z
