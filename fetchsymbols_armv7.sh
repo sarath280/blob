@@ -11,15 +11,13 @@ echo "Mounting DDI..."
 
 function fetchsymbols_armv7()
 {
-  ./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep armv7) | tr ':' '\n'|tr -d ' '|head -1)" ./tmp/cache
+./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep arm64 ) | tr ':' '\n'|tr -d ' '|head -1)" ./tmp/cache64
+  # ./bin/fetchsymbols -f "$(./bin/fetchsymbols -l 2>&1 | (grep armv7) | tr ':' '\n'|tr -d ' '|head -1)" ./tmp/cache
 }
 
 function make_run()
 {
-  cd ./data/dyldmagic_amfid
-  ./make.sh
-  cd ../../
-  ./bin/afcclient put ./data/dyldmagic_amfid/magic64_amfid.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
+  # ./bin/afcclient put ./data/dyldmagic/magic.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
   cd ./data/dyldmagic
   ./make-run.sh
   cd ../../
