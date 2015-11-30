@@ -17,7 +17,6 @@ function fetchsymbols_armv7()
 
 function make_run()
 {
-  # ./bin/afcclient put ./data/dyldmagic/magic.dylib PhotoData/KimJongCracks/Library/PrivateFrameworks/GPUToolsCore.framework/GPUToolsCore
   cd ./data/dyldmagic
   ./make-run.sh
   cd ../../
