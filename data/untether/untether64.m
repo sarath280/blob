@@ -69,16 +69,16 @@ void hexdump(unsigned char* ptr, size_t sz) {
 }
 int main(int argc, char** argv) {
     __unused int pp = getppid();
-    int fz = open("/var/mobile/Media/kjc_untether.log", O_APPEND|O_CREAT|O_RDWR);
+    int fz = open("/var/mobile/Media/kjc_untether.log", O_APPEND|O_CREAT|O_RDWR, 0666);
     dup2(fz, STDOUT_FILENO);
     dup2(fz, STDERR_FILENO);
     
     //
-    int p = fork();
-    assert(p >= 0);
-    if (p) {
-        return waitpid(p, 0, 0);
-    }
+    //int p = fork();
+    //assert(p >= 0);
+    //if (p) {
+    //    return waitpid(p, 0, 0);
+    //}
     
     NSLog(@"Smoke Britta Erry Day");
     NSLog(@"yalu for ios841 arm64 untether by ~qwertyoruiop[kjc]");
